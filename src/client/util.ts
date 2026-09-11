@@ -33,15 +33,27 @@ export interface HistoryRow {
   key: string | null
 }
 
-/** The conversation snapshot slice this plugin reads (structural subset). */
-export interface HistoryConversationSnapshot {
+/**
+ * The Session snapshot slice this plugin reads (structural subset of DSH's
+ * `SessionSnapshot`). It arrives as the dock's owner share (`props.session`)
+ * and carries lifecycle/history state only: since DSH 0.1.5 the rendered Chat
+ * nodes live in a separate Chat-target snapshot ({@link HistoryChatSnapshot}).
+ */
+export interface HistorySessionSnapshot {
   sessionId?: string
   hasMore?: boolean
   loadingOlder?: boolean
-  chat?: {
-    nodes?: {
-      values(): readonly HistoryChatNode[]
-    }
+}
+
+/**
+ * The Chat target snapshot slice this plugin reads (structural subset of DSH
+ * 0.1.5's `ChatSnapshot`). It is reached through the `useChat` selector hook
+ * that the framework injects into `conversation.input.dock` standard props;
+ * the older `props.session.chat` path no longer exists.
+ */
+export interface HistoryChatSnapshot {
+  nodes?: {
+    values(): readonly HistoryChatNode[]
   }
 }
 
@@ -76,16 +88,16 @@ export function fmtTime(ms: number): string {
 }
 
 /** Collect the user/steering messages in the loaded window + seq→key map. */
-export function collectWindowItems(session: HistoryConversationSnapshot | undefined): {
+export function collectWindowItems(chat: HistoryChatSnapshot | undefined): {
   items: HistoryRow[]
   keys: Map<number, string>
 } {
   const items: HistoryRow[] = []
   const keys = new Map<number, string>()
-  if (!session || !session.chat || !session.chat.nodes) return { items, keys }
+  if (!chat || !chat.nodes) return { items, keys }
   let nodes: readonly HistoryChatNode[] = []
   try {
-    nodes = session.chat.nodes.values()
+    nodes = chat.nodes.values()
   } catch {
     nodes = []
   }

@@ -165,6 +165,11 @@ Safe to ignore. DSH provides `@deepseek-ai/*` and react at runtime through its o
 
 ## Changelog
 
+### v0.1.25
+
+- **DSH 0.1.5 compatibility**: `conversation.input.dock`'s `session` is now a `SessionSnapshot` (no `chat`), and Chat nodes moved behind the standard `useChat` selector hook — fixes the list rendering while message locate/jump silently failed.
+- **DSH 0.1.5 compatibility**: the host reads the live log through `session.snapshotEvents()` instead of the removed `session.events` (old getter kept as fallback), restoring the in-memory fast path.
+
 ### v0.1.20
 
 - Docs: added this **English README.en.md**, cross-linked with the Chinese README; shipped in the npm package and the registry staging.

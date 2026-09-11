@@ -13,8 +13,9 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import type { Context } from 'cordis'
 import {
-  type HistoryConversationSnapshot,
+  type HistoryChatSnapshot,
   type HistoryRow,
+  type HistorySessionSnapshot,
   collectWindowItems,
   copyText,
   findAnchor,
@@ -50,11 +51,13 @@ interface HistoryHostItem {
 
 /** Props the dock slot renders with. */
 interface HistoryDockProps {
-  session?: HistoryConversationSnapshot
+  session?: HistorySessionSnapshot
   /** Standard kit: the composer input state hook (per-session). */
   useInput?: <T>(selector: (s: InputState) => T) => T
   /** Standard kit: the composer input action face. */
   inputActions?: InputActions
+  /** Standard kit: selector hook over the current Chat target snapshot (DSH 0.1.5+). */
+  useChat?: <T>(selector: (s: HistoryChatSnapshot) => T) => T
 }
 
 /** The composer input state slice this plugin reads (structural subset). */
@@ -199,6 +202,7 @@ function HistoryDock(props: HistoryDockProps & {
   const timeout = props.timeout
   const useInput = props.useInput
   const inputActions = props.inputActions
+  const useChat = props.useChat
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
@@ -216,7 +220,11 @@ function HistoryDock(props: HistoryDockProps & {
   const [recallCursor, setRecallCursor] = useState(-1)
   const [recallStaging, setRecallStaging] = useState('')
 
-  const local = useMemo(() => collectWindowItems(session), [session])
+  // The rendered Chat nodes live on the separate Chat target snapshot in DSH
+  // 0.1.5+; read them through the injected `useChat` selector hook. Called
+  // unconditionally (hook order) and read only when the standard prop exists.
+  const chatSnapshot = useChat !== undefined ? useChat((s) => s) : undefined
+  const local = useMemo(() => collectWindowItems(chatSnapshot), [chatSnapshot])
 
   const applyHistory = (res: { ok: boolean; items: HistoryHostItem[]; error?: string }): void => {
     if (res.ok) { setHostItems(res.items); setHostState('loaded') }
@@ -382,7 +390,7 @@ function HistoryDock(props: HistoryDockProps & {
   // loaded window, then wait for its DOM row to render, then scroll + close.
   useEffect(() => {
     if (pendingSeq === null) return
-    if (!session || !session.chat) return
+    if (!session) return
     const key = local.keys.get(pendingSeq)
     if (key !== undefined) {
       if (findAnchor(key) !== null) {
@@ -604,12 +612,13 @@ export function apply(ctx: Context): void {
     }
   slots.inject('conversation.input.dock', () => slots.register(
     { name: 'conversation.input.dock', id: 'dsh-history', order: 30 },
-    (props: HistoryDockProps & { useInput?: unknown; inputActions?: unknown }) => createElement(HistoryDock, {
+    (props: HistoryDockProps & { useInput?: unknown; inputActions?: unknown; useChat?: unknown }) => createElement(HistoryDock, {
       session: props.session,
       loadOlderFor,
       timeout,
       useInput: props.useInput as HistoryDockProps['useInput'],
       inputActions: props.inputActions as HistoryDockProps['inputActions'],
+      useChat: props.useChat as HistoryDockProps['useChat'],
     }),
   ))
 }

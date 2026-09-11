@@ -165,6 +165,14 @@ bash restart-dsh-web.sh
 
 ## 版本更新记录
 
+### v0.1.25
+
+- **兼容 DSH 0.1.5**：`conversation.input.dock` 的 `session` 已由会话快照改为
+  `SessionSnapshot`（不再含 `chat`），Chat 节点改从标准注入的 `useChat` 选择器
+  钩子读取——修复"完整历史能列出、但点击无法定位/跳转"的问题；
+- **兼容 DSH 0.1.5**：宿主侧会话日志由已移除的 `session.events` 改为
+  `session.snapshotEvents()`（保留旧 getter 回退），恢复内存直读快路径。
+
 ### v0.1.20
 
 - 文档：新增 **English 版本 README.en.md**，中英文顶部互链；README.en.md 同步进入

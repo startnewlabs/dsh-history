@@ -12,7 +12,7 @@
  */
 import { type ReactElement } from 'react';
 import type { Context } from 'cordis';
-import { type HistoryConversationSnapshot } from './util';
+import { type HistoryChatSnapshot, type HistorySessionSnapshot } from './util';
 /** ------------------------------------------------------------------ types */
 /** The client slots service face (structural subset used here). */
 interface HistorySlotsService {
@@ -33,11 +33,13 @@ interface ClientSessionsService {
 }
 /** Props the dock slot renders with. */
 interface HistoryDockProps {
-    session?: HistoryConversationSnapshot;
+    session?: HistorySessionSnapshot;
     /** Standard kit: the composer input state hook (per-session). */
     useInput?: <T>(selector: (s: InputState) => T) => T;
     /** Standard kit: the composer input action face. */
     inputActions?: InputActions;
+    /** Standard kit: selector hook over the current Chat target snapshot (DSH 0.1.5+). */
+    useChat?: <T>(selector: (s: HistoryChatSnapshot) => T) => T;
 }
 /** The composer input state slice this plugin reads (structural subset). */
 interface InputState {

@@ -35,7 +35,10 @@ interface HistorySessionQuery {
 /** The live in-memory session store face: fast in-process log access. */
 interface HistorySessionStore {
   get(id: string): {
+    /** Pre-0.1.5 full-log getter (removed in DSH 0.1.5). */
     events?: readonly HistorySessionEvent[]
+    /** DSH 0.1.5 full-log snapshot accessor. */
+    snapshotEvents?(): readonly HistorySessionEvent[]
   } | undefined
 }
 
@@ -202,7 +205,12 @@ async function listUserMessages(ctx: Context, payload: unknown): Promise<History
   // append-only log snapshot directly. No persistence read, no replay
   // validation, no I/O: this is what makes repeat opens near-instant.
   const sessions = ctx.get('sessions') as HistorySessionStore | undefined
-  const liveEvents = sessions?.get(sessionId)?.events
+  const live = sessions?.get(sessionId)
+  // DSH 0.1.5 replaced the public `session.events` getter with
+  // `snapshotEvents()`; keep the old getter as a fallback for older hosts.
+  const liveEvents = live === undefined
+    ? undefined
+    : (typeof live.snapshotEvents === 'function' ? live.snapshotEvents() : live.events)
   if (liveEvents !== undefined) {
     const items = collectUserMessages(liveEvents)
     if (historyCache.size >= HISTORY_CACHE_MAX) {

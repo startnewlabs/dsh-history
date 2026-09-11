@@ -1,6 +1,6 @@
 {
   "id": "dsh-external/dsh-history",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "main": "./lib/index.mjs",
   "description": "Quickly view, search, and jump to all the messages you sent in a long conversation.",
   "engines": {
