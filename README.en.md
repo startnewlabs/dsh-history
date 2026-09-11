@@ -85,7 +85,9 @@ bash ~/Code/dsh-history/restart-dsh-web.sh
 
 **Updating**: `git pull && pnpm install && pnpm build` → `bash ~/Code/dsh-history/restart-dsh-web.sh`.
 
-**Switching back to the npm channel**: change the dependency back to `"dsh-history": "^0.1.20"`, run `pnpm install`, and remove the manual mount row (to avoid double-mounting).
+**Switching back to the npm channel**: change the dependency back to `"dsh-history": "^0.1.25"`, run `pnpm install`, and remove the manual mount row (to avoid double-mounting).
+
+**Maintainer docs**: the release & multi-platform listing runbook (npm / GitHub / awesome-dsh-plugin / dsh-market) lives in [`docs/publishing.md`](docs/publishing.md).
 
 </details>
 

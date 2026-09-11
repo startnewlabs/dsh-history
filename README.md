@@ -85,7 +85,9 @@ bash ~/Code/dsh-history/restart-dsh-web.sh
 
 **更新**：`git pull && pnpm install && pnpm build` → `bash ~/Code/dsh-history/restart-dsh-web.sh`。
 
-**切回 npm 通道**：把依赖改回 `"dsh-history": "^0.1.13"` 再 `pnpm install`，并移除手动挂载行（避免双挂载）。
+**切回 npm 通道**：把依赖改回 `"dsh-history": "^0.1.25"` 再 `pnpm install`，并移除手动挂载行（避免双挂载）。
+
+**维护者文档**：发布与各平台（npm / GitHub / awesome-dsh-plugin 目录 / dsh-market 市场）上架流程见 [`docs/publishing.md`](docs/publishing.md)。
 
 </details>
 
