@@ -1,9 +1,3 @@
-/**
- * Pure helpers for the dsh-history client half. No React, no plugin services —
- * only thin DOM/browser helpers and data transforms. Kept in one file so the
- * component (index.ts) stays focused on rendering and state, and so utility
- * logic is testable in isolation.
- */
 /** One materialized chat node (user or steering message). */
 export interface HistoryChatNode {
     kind?: string;

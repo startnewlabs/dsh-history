@@ -13,6 +13,7 @@
 import { type ReactElement } from 'react';
 import type { Context } from 'cordis';
 import { type HistoryChatSnapshot, type HistorySessionSnapshot } from './util';
+import { t, syncHostLocale, setLang } from './i18n';
 /** ------------------------------------------------------------------ types */
 /** The client slots service face (structural subset used here). */
 interface HistorySlotsService {
@@ -66,6 +67,12 @@ declare module 'cordis' {
 /** ------------------------------------------------------------------ plugin */
 /** Services required before mounting: the slot registry. */
 export declare const inject: string[];
+/** Test seam: language table access for the bundle smoke test. */
+export declare const __i18n: {
+    t: typeof t;
+    setLang: typeof setLang;
+    syncHostLocale: typeof syncHostLocale;
+};
 /**
  * Client plugin body: inject the stylesheet and register the dock row.
  * @param ctx - client plugin context (slots, sessions, timer).

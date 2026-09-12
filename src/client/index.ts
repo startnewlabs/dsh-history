@@ -22,6 +22,7 @@ import {
   fmtTime,
   scrollToKey,
 } from './util'
+import { t, syncHostLocale, setLang } from './i18n'
 
 /** ------------------------------------------------------------------ types */
 
@@ -177,12 +178,12 @@ function fetchFullHistory(sessionId: string): Promise<{ ok: boolean; items: Hist
         prefetchCache.set(sessionId, { at: Date.now(), items: record.items })
         return { ok: true, items: record.items }
       }
-      return { ok: false, items: [], error: record?.error ?? '读取完整历史失败' }
+      return { ok: false, items: [], error: record?.error ?? t('fetchFail') }
     })
     .catch((err: unknown) => ({
       ok: false,
       items: [],
-      error: err instanceof DOMException && err.name === 'AbortError' ? '请求超时' : String(err instanceof Error ? err.message : err),
+      error: err instanceof DOMException && err.name === 'AbortError' ? t('timeout') : String(err instanceof Error ? err.message : err),
     }))
     .finally(() => {
       if (timer !== undefined) clearTimeout(timer)
@@ -228,7 +229,7 @@ function HistoryDock(props: HistoryDockProps & {
 
   const applyHistory = (res: { ok: boolean; items: HistoryHostItem[]; error?: string }): void => {
     if (res.ok) { setHostItems(res.items); setHostState('loaded') }
-    else { setHostState('error'); setHostError(res.error ?? '读取完整历史失败') }
+    else { setHostState('error'); setHostError(res.error ?? t('fetchFail')) }
   }
   const resetLocate = (): void => {
     setPendingSeq(null); setPendingRetry(0); setLoadFailed(false); setAutoLoadPages(0)
@@ -397,17 +398,17 @@ function HistoryDock(props: HistoryDockProps & {
         if (scrollToKey(key)) {
           setOpen(false); setQuery(''); setNotice(null)
         } else {
-          setNotice('已定位到该消息，但页面滚动未生效，请再点击一次。')
+          setNotice(t('scrollMiss'))
         }
         resetLocate()
         return
       }
       if (pendingRetry >= MAX_LOCATE_RETRIES) {
         resetLocate()
-        setNotice('该消息正在渲染中，暂时无法定位。请稍候再试。')
+        setNotice(t('rendering'))
         return
       }
-      setNotice('正在定位该消息…')
+      setNotice(t('locating'))
       if (typeof timeout === 'function') timeout(() => setPendingRetry((n) => n + 1), 150)
       else setPendingRetry((n) => n + 1)
       return
@@ -415,7 +416,7 @@ function HistoryDock(props: HistoryDockProps & {
     if (loadFailed) return
     if (autoLoadPages >= MAX_AUTO_LOAD_PAGES) {
       setLoadFailed(true)
-      setNotice(`连续加载 ${MAX_AUTO_LOAD_PAGES} 页仍未找到该消息，已停止。可尝试向上滚动加载更早内容后重试。`)
+      setNotice(t('autoLoadGiveUp', { pages: MAX_AUTO_LOAD_PAGES }))
       return
     }
     if (session.hasMore && !session.loadingOlder) {
@@ -423,17 +424,17 @@ function HistoryDock(props: HistoryDockProps & {
         const p = loadOlderFor?.(String(sessionId))
         if (p && typeof p.then === 'function') {
           setAutoLoadPages((n) => n + 1)
-          setNotice('正在加载更早历史以定位该消息…')
+          setNotice(t('loadingEarlier'))
           p.then(() => setPendingRetry((n) => n + 1)).catch(() => {
-            setLoadFailed(true); setNotice('加载更早历史失败，无法定位该消息。')
+            setLoadFailed(true); setNotice(t('loadEarlierFail'))
           })
         }
       } catch {
-        setLoadFailed(true); setNotice('加载更早历史失败，无法定位该消息。')
+        setLoadFailed(true); setNotice(t('loadEarlierFail'))
       }
     } else if (!session.hasMore) {
       setLoadFailed(true)
-      setNotice('已加载到该会话最早的记录，仍未找到这条消息（可能已被删除）。')
+      setNotice(t('earliestNotFound'))
     }
   }, [pendingSeq, local.keys, loadFailed, session, sessionId, loadOlderFor, autoLoadPages, pendingRetry, timeout])
 
@@ -444,15 +445,15 @@ function HistoryDock(props: HistoryDockProps & {
         setOpen(false); setQuery(''); setNotice(null)
         return
       }
-      setNotice('正在定位该消息…')
+      setNotice(t('locating'))
       setPendingSeq(it.seq); setPendingRetry(0); setLoadFailed(false); setAutoLoadPages(0)
       return
     }
     if (typeof loadOlderFor !== 'function') {
-      setNotice('这条消息位于更早的历史中，尚未加载到当前对话窗口。当前环境无法自动加载更早历史，可先向上滚动加载。')
+      setNotice(t('noAutoLoad'))
       return
     }
-    setNotice('正在加载更早历史以定位该消息…')
+    setNotice(t('loadingEarlier'))
     setPendingSeq(it.seq); setPendingRetry(0); setLoadFailed(false); setAutoLoadPages(0)
   }
 
@@ -465,7 +466,7 @@ function HistoryDock(props: HistoryDockProps & {
           timeout(() => setCopiedSeq((cur) => (cur === it.seq ? null : cur)), 1400)
         }
       } else {
-        setNotice('复制失败。')
+        setNotice(t('copyFail'))
       }
     })
   }
@@ -495,9 +496,9 @@ function HistoryDock(props: HistoryDockProps & {
     className: 'dshm_trigger',
     onClick: () => { setOpen(!open); setQuery(''); setNotice(null); setPendingSeq(null) },
     'aria-expanded': open,
-    'aria-label': '我的消息',
+    'aria-label': t('badgeAria'),
   }, [
-    createElement('span', { key: 'badge', className: 'dshm_badge' }, `我的消息 (${items.length})`),
+    createElement('span', { key: 'badge', className: 'dshm_badge' }, t('badge', { count: items.length })),
     createElement('span', { key: 'chev', className: 'dshm_chevron' }, open ? '▾' : '▸'),
   ]))
 
@@ -508,7 +509,7 @@ function HistoryDock(props: HistoryDockProps & {
         key: 'search',
         className: 'dshm_search',
         type: 'text',
-        placeholder: '搜索我发过的消息…',
+        placeholder: t('searchPlaceholder'),
         value: query,
         onChange: (e: { target: { value: string } }) => setQuery(e.target.value),
         autoFocus: true,
@@ -518,22 +519,22 @@ function HistoryDock(props: HistoryDockProps & {
         type: 'button',
         className: 'dshm_order',
         onClick: () => setDesc(!desc),
-      }, desc ? '最新在前' : '最早在前'),
+      }, desc ? t('newestFirst') : t('oldestFirst')),
     ]))
     if (notice) {
       panel.push(createElement('div', { key: 'notice', className: 'dshm_notice' }, notice))
     }
     if (hostState === 'loading') {
-      panel.push(createElement('div', { key: 'loading', className: 'dshm_loading' }, '正在读取完整历史…'))
+      panel.push(createElement('div', { key: 'loading', className: 'dshm_loading' }, t('loading')))
     } else if (hostState === 'error') {
       panel.push(createElement('div', { key: 'error', className: 'dshm_error' }, [
-        `完整历史读取失败：${hostError ?? '未知错误'}（当前仅显示已加载窗口内的消息）`,
+        t('loadErrorPrefix', { error: hostError ?? t('unknownError') }),
         createElement('button', {
           key: 'retry',
           type: 'button',
           className: 'dshm_retry',
           onClick: () => setRetryToken((n) => n + 1),
-        }, '重试'),
+        }, t('retry')),
       ]))
     }
     if (filtered.length > 0) {
@@ -542,11 +543,11 @@ function HistoryDock(props: HistoryDockProps & {
         const pending = pendingSeq === it.seq
         const copied = copiedSeq === it.seq
         const tagClass = pending ? 'dshm_tagPending' : (it.key ? 'dshm_tagLoaded' : 'dshm_tag')
-        const tagText = pending ? '定位中…' : (it.key ? '可定位' : '未加载')
+        const tagText = pending ? t('tagPending') : (it.key ? t('tagJumpable') : t('tagNotLoaded'))
         return createElement('li', {
           key: `m${it.seq}`,
           className: 'dshm_row',
-          title: it.text || '(无文本)',
+          title: it.text || t('noText'),
         }, [
           createElement('span', { key: 't', className: 'dshm_time' }, fmtTime(it.time)),
           createElement('span', {
@@ -554,32 +555,32 @@ function HistoryDock(props: HistoryDockProps & {
             className: 'dshm_text',
             role: 'button',
             tabIndex: 0,
-            'aria-label': `跳转到：${it.text || '(无文本)'}`,
+            'aria-label': t('jumpAria', { text: it.text || t('noText') }),
             onClick: () => jumpTo(it),
             onKeyDown: (e: { key: string; preventDefault(): void }) => {
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpTo(it) }
             },
-          }, it.text || '(无文本)'),
+          }, it.text || t('noText')),
           createElement('span', { key: 'tag', className: tagClass, onClick: () => jumpTo(it) }, tagText),
           createElement('button', {
             key: 'c',
             type: 'button',
             className: 'dshm_copy',
-            title: copied ? '已复制' : '复制文本',
-            'aria-label': copied ? '已复制' : '复制消息文本',
+            title: copied ? t('copied') : t('copyText'),
+            'aria-label': copied ? t('copied') : t('copyAria'),
             onClick: (e: { stopPropagation(): void }) => doCopy(it, e),
           }, copied ? '✓' : '⧉'),
         ])
       })
       panel.push(createElement('ul', { key: 'list', className: 'dshm_list' }, rows))
       if (filtered.length > MAX_RENDERED_ROWS) {
-        panel.push(createElement('div', { key: 'cap', className: 'dshm_notice' }, `仅显示最近 ${MAX_RENDERED_ROWS} 条匹配消息（共 ${filtered.length} 条）；使用搜索框可缩小范围。`))
+        panel.push(createElement('div', { key: 'cap', className: 'dshm_notice' }, t('capNotice', { shown: MAX_RENDERED_ROWS, total: filtered.length })))
       }
     } else if (hostState !== 'loading') {
-      panel.push(createElement('div', { key: 'empty', className: 'dshm_empty' }, query.trim() ? '没有匹配的消息。' : '这个会话里还没有你发起的消息。'))
+      panel.push(createElement('div', { key: 'empty', className: 'dshm_empty' }, query.trim() ? t('emptyFiltered') : t('emptySession')))
     }
     if (hostState === 'loaded' && Array.isArray(hostItems) && hostItems.length > items.length) {
-      panel.push(createElement('div', { key: 'more', className: 'dshm_notice' }, `已显示全部 ${hostItems.length} 条你发送的消息；${hostItems.length - local.items.length} 条位于已加载窗口之外（点击可自动加载并定位，或先向上滚动加载）。`))
+      panel.push(createElement('div', { key: 'more', className: 'dshm_notice' }, t('moreNotice', { total: hostItems.length, beyond: hostItems.length - local.items.length })))
     }
     children.push(createElement('div', { key: 'panel', className: 'dshm_panel' }, panel))
   }
@@ -592,11 +593,15 @@ function HistoryDock(props: HistoryDockProps & {
 /** Services required before mounting: the slot registry. */
 export const inject = ['slots']
 
+/** Test seam: language table access for the bundle smoke test. */
+export const __i18n = { t, setLang, syncHostLocale }
+
 /**
  * Client plugin body: inject the stylesheet and register the dock row.
  * @param ctx - client plugin context (slots, sessions, timer).
  */
 export function apply(ctx: Context): void {
+  syncHostLocale(ctx)
   ctx.effect(() => injectStyles(), 'dsh-history: stylesheet')
   const slots = ctx.get('slots') as HistorySlotsService | undefined
   if (slots === undefined) return
