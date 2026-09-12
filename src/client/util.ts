@@ -4,6 +4,7 @@
  * component (index.ts) stays focused on rendering and state, and so utility
  * logic is testable in isolation.
  */
+import { t } from './i18n'
 
 /** One materialized chat node (user or steering message). */
 export interface HistoryChatNode {
@@ -63,8 +64,8 @@ export function textOf(content: readonly HistoryContentBlock[] | undefined): str
   const parts: string[] = []
   for (const b of content) {
     if (b && b.type === 'text' && typeof b.text === 'string') parts.push(b.text)
-    else if (b && b.type === 'image') parts.push('[图片]')
-    else if (b && b.type === 'tool-call' && typeof b.name === 'string') parts.push('[工具: ' + b.name + ']')
+    else if (b && b.type === 'image') parts.push(t('imagePlaceholder'))
+    else if (b && b.type === 'tool-call' && typeof b.name === 'string') parts.push(t('toolCall', { name: b.name }))
   }
   return parts.join(' ').replace(/\s+/g, ' ').trim()
 }
